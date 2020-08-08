@@ -25,6 +25,15 @@ getQuestion <- function(s, num) {
 # Define a server for the Shiny app
 function(input, output, session) {
 
+  observeEvent(input$tab, {
+    print('clicked tab')
+    
+    if (input$tab == 'Gradebook') {
+      print(assignment$gradebook)
+    }
+  })
+  
+  
   volumes <- c(Home = fs::path_home(), 
                Desktop = "/Users/dancikg/Desktop/r_grading", getVolumes()())
   
@@ -48,7 +57,6 @@ function(input, output, session) {
     defaultPath = "/Desktop/r_grading/assignment",
     roots = volumes
   )
-  
   
   observeEvent( input$dir1, {
     dir_selected <- parseDirPath(volumes, input$dir1)
@@ -339,16 +347,28 @@ function(input, output, session) {
   })
 
   
-  output$gradebook <- renderDataTable(
-    DT::datatable(assignment$gradebook,rownames = TRUE)
-  )
+  observe( {
+      if (is.null(assignment$gradebook)) {
+        return()
+      }
+    
+      print('re-render gradebook...')
+    
+      output$gradebook <- renderTable(
+        assignment$gradebook,rownames = TRUE
+      )
+  })
   
-  output$questionPoints <- renderDataTable(
-    DT::datatable(data.frame(question_number = 1:assignment$num_questions,
+  observe({
+    if (is.null(assignment$num_questions)) {
+      return()
+    }
+    output$questionPoints <- renderTable(
+        data.frame(question_number = 1:assignment$num_questions,
                              points = assignment$question_points), 
-                             rownames = FALSE,
-                  options = list(searching = FALSE, paging = FALSE))
-                  )
+                             rownames = FALSE
+        )
+  })
   
   currentFile <- reactive({
     assignment$files[assignment$fileNum]

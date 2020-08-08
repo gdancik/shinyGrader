@@ -21,7 +21,7 @@ fluidPage(
 useShinyjs(),
  #shinythemes::themeSelector(),
   navbarPage('Help me grade', inverse = TRUE, theme = shinytheme("cerulean"),
-             
+    id = 'tab',
     tabPanel('Assignment upload',
         
     # Generate a row with a sidebar
@@ -46,7 +46,9 @@ useShinyjs(),
         #htmlOutput("user_question"),
         #dataTableOutput('gradebook')
         h2('Question point values'),
-        dataTableOutput('questionPoints', width = '30%')
+        fluidRow(column(width = 3), column(width = 6,
+            tableOutput('questionPoints')
+        ))
     )
   )),
   
@@ -108,7 +110,7 @@ useShinyjs(),
   ),
 
   tabPanel('Gradebook', 
-           dataTableOutput('gradebook'))
+           tableOutput('gradebook'))
   )
 )
 
