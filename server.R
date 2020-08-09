@@ -22,6 +22,9 @@ getQuestion <- function(s, num) {
 }
 
 
+beginTotalGradeComment <- '\n<!-- BEGIN TOTAL GRADE COMMENT --->\n'
+endTotalGradeComment <- '\n<!-- END TOTAL GRADE COMMENT --->\n'
+
 # Define a server for the Shiny app
 function(input, output, session) {
 
@@ -31,6 +34,7 @@ function(input, output, session) {
     if (input$tab == 'Gradebook') {
       print(assignment$gradebook)
     }
+    
   })
   
   
@@ -215,14 +219,26 @@ function(input, output, session) {
   }
   
   observeEvent(assignment$fileNum, {
+  
     updateSelectInput(session, 'person', "Student:",
                     1:length(assignment$files), selected = assignment$fileNum)
+    
+    updateSelectInput(session, 'personFinal', "Student:",
+                      1:length(assignment$files), selected = assignment$fileNum)
+    
   })
   
   observeEvent(input$person, {
     assignment$fileNum <- as.integer(input$person)
   })
 
+  observeEvent(input$personFinal, {
+    assignment$fileNum <- as.integer(input$personFinal)
+  })
+  
+  
+  
+ 
   updatePointsPossible <- function(points, update_earned = TRUE) {
     updateNumericInput(session, 'points_possible', 'Points possible', value = points)
     if (update_earned) {
@@ -251,7 +267,9 @@ function(input, output, session) {
       
       assignment_orig <- gsub(s, paste0(s, '\n', 
                                         '<div id = "total-grade-div" style = "color:blue; border: 1px solid blue; padding:10px; margin-bottom:10px;">',
-                                        '<h2 id = "total-grade">Grade Here</h2> </div>'), 
+                                        '<h2 id = "total-grade">Grade Here</h2>',
+                                        beginTotalGradeComment, endTotalGradeComment,
+                                        '</div>'),
                                         assignment_orig)
       
       write(assignment_orig, file = copy_file)
@@ -340,7 +358,8 @@ function(input, output, session) {
   }) 
   
   output$user_assignment <- renderUI({
-    HTML(paste0('<h3> Student #', assignment$fileNum,
+    HTML(paste0('<h3> Student #', assignment$fileNum, 
+                ', ', 
                 num_graded_string(currentFile()), '</h3>'), getAssignment())
     
     
@@ -396,6 +415,21 @@ function(input, output, session) {
     }
   })
   
+  observeEvent(input$`add-comment`,{
+    
+    if (trimws(input$`final-comment`) == '') {
+      return()
+    }
+    
+    g <- addComment(getAssignment(), input$`final-comment`)
+    
+    write(g, file = currentFile())
+    
+    assignment$changed <- TRUE
+    
+  })
+  
+  
   
   observeEvent(input$nextq, {
     nextQuestion(1)
@@ -413,8 +447,6 @@ function(input, output, session) {
     g2 <- gsub('<p class = \"answer-wrong\".*?</p>', '', g2)
     x <- gsub(g1, g2, getAssignment(), fixed = TRUE)
   
-    
-    
     assignment$changed <- TRUE
     
     setGradebook(currentFile(), input$question, NA) 
@@ -423,14 +455,27 @@ function(input, output, session) {
     
   })
   
+  observeEvent(input$`delete-comment`, {
+    
+    x <- str_extract(getAssignment(), totalGradeComment())
+    x <- gsub(x, totalGradeComment(mycomment = ''), getAssignment(), fixed = TRUE)
+    
+    assignment$changed <- TRUE
+    write(x, file = currentFile())
+    
+  })
   
-  observeEvent(input$nextp, {
+  
+  
+  
+  observeEvent( c(input$nextp, input$nextpFinal),{
+                   cat("next person")
     nextPerson(1)
-  })
+  }, ignoreInit = TRUE)
   
-  observeEvent(input$previousp, {
+  observeEvent(c(input$previousp, input$previouspFinal), {
     nextPerson(-1)
-  })
+  }, ignoreInit = TRUE)
   
   source('gradebook.R', local = TRUE)
   
@@ -472,7 +517,27 @@ function(input, output, session) {
     assignment$change <- TRUE
     return(s)
   }
+
+  # return regex for totalGrade comment
+  totalGradeComment <- function(x, mycomment = '[\\s\\S]*?') {
+    paste0(beginTotalGradeComment, mycomment, endTotalGradeComment)
+  }
   
+  addComment <- function(s, comment) {
+    
+    print('commenting ..')
+   
+    x <- str_extract(s, totalGradeComment())
+    t <- totalGradeComment(mycomment = comment)
+    
+    s <- gsub(x, totalGradeComment(mycomment = comment), s, fixed = TRUE)
+    
+    assignment$change <- TRUE
+    return(s)
+  }
+  
+  
+    
   # adds total to file; 
   # replaces total-grade element of txt with total grade
   addTotal <- function(f, txt) {
