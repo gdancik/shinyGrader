@@ -17,7 +17,9 @@ fluidPage(
     "#shiny-notification-panel" = "width: 33% !important; bottom: 10% !important;",
     "#shiny-notification-graded_exists" = "border: 1px solid black;",
     "#previousq, #nextq, #previousp, #nextp"= "margin-top:25px;",
-    "#previouspFinal, #nextpFinal" = "margin-top:25px"
+    "#previouspFinal, #nextpFinal" = "margin-top:25px;",
+    ".shiny-notification" = "border-style: solid; border-color: black; opacity: 1;"
+    
   )), 
   
   # Give the page a title
@@ -33,6 +35,7 @@ useShinyjs(),
 
 
   tabPanel('Gradebook', 
+           h3('This is a test'),
            tableOutput('gradebook'))
   )
 )

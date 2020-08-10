@@ -46,6 +46,7 @@ tabPanelGradeQuestions <- tabPanel('Grade questions',
             ),
              
              mainPanel(
+               htmlOutput('needsGrading'),
                htmlOutput("user_question")
              )
           )

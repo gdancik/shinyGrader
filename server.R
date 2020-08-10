@@ -7,7 +7,7 @@ library(DT)
 # 
 # getAssignment - depends on all of above
 # getQuestion - getAssignment for input$question
-#######################################
+##################################################
 
 
 cross <- '&#10060'
@@ -31,8 +31,12 @@ function(input, output, session) {
   observeEvent(input$tab, {
     print('clicked tab')
     
-    if (input$tab == 'Gradebook') {
-      print(assignment$gradebook)
+    if (input$tab == 'Grade questions') {
+      
+#      <link rel="stylesheet" type="text/css" href="shinythemes/css/cerulean.min.css"/>
+        
+        #shinyjs::runjs("$('head').append('<link rel=\"stylesheet\" type=\"text/css\" href=\"shinythemes/css/cerulean.min.css\">');")
+      
     }
     
   })
@@ -115,8 +119,9 @@ function(input, output, session) {
     if (input$chkOverwrite) {
       f <- Sys.glob(paste0(d,'/*'))
       if (length(f) > 0) {
-        showNotification(HTML('<h3>Note: Deleting files in graded directory</h3>'),
-                         id = 'deleting-files', duration = 7, type = "message")
+        showNotification(HTML('<h3>Deleting files in graded directory</h3>',
+                              '<p>Files are deleted when overwrite option is checked</p>'),
+                         id = 'deleting-files', duration = 7, type = "error")
         file.remove(f)
       }
     }
@@ -212,6 +217,11 @@ function(input, output, session) {
     
   }
   
+  resetComment <- function() {
+    updateTextAreaInput(session, 'comment', 'Question comment', '')
+  }
+  
+  
   updateQuestionInput <- function(selected){
     updateSelectInput(session, "question", "Question:",
                       1:length(assignment$question_points), 
@@ -267,9 +277,9 @@ function(input, output, session) {
       
       assignment_orig <- gsub(s, paste0(s, '\n', 
                                         '<div id = "total-grade-div" style = "color:blue; border: 1px solid blue; padding:10px; margin-bottom:10px;">',
-                                        '<h2 id = "total-grade">Grade Here</h2>',
+                                        '<h2 id = "total-grade">Grade Here</h2><h3>',
                                         beginTotalGradeComment, endTotalGradeComment,
-                                        '</div>'),
+                                        '</h3></div>'),
                                         assignment_orig)
       
       write(assignment_orig, file = copy_file)
@@ -290,7 +300,7 @@ function(input, output, session) {
   #  1 for next question
   #  -1 for previous
   # NULL to go to first question
-  nextQuestion <- function(offset) {
+  nextQuestion <- function(offset, notify = TRUE) {
 
     selected = 1
     if (!is.null(offset)) {
@@ -298,9 +308,10 @@ function(input, output, session) {
     }
     
     if (selected > input$num_questions) {
-      showNotification('You are past the last question; starting over at question #1',
-                       duration = 7)
-      
+      if (notify) {
+        showNotification(HTML('<h3> This was the last question</h3><p>Starting over at question #1</p>'),
+                       duration = 7, type = 'message')
+      }
       selected = 1
     }
     
@@ -309,25 +320,34 @@ function(input, output, session) {
     cat('update with points: ', assignment$question_points[selected], '...\n')
     updatePointsPossible(assignment$question_points[selected])
     
+    resetComment()
+    
     }
   
   
   # go to next or previous person, depending on offset; 
   #   if past the end, go to next question for first person
-  nextPerson <- function(offset) {
+  nextPerson <- function(offset, notify = TRUE) {
     
     num <- assignment$fileNum + offset
     
     # if passed the end, next question for first person
     if (num > length(assignment$files)) {
-      num <- 1
-      nextQuestion(1)
+        if (notify) {
+          showNotification(HTML('<h3>This was the last student</h3><p>Starting over at person #1</p>'),
+                         duration = 7, type = 'message')
+        }
+        selected = 1
+        num <- 1
+        if (input$tab != 'Final comments') nextQuestion(1, notify)
     } else if (num < 1) {
       shinyjs::alert("already at first person")
       return()
     }
     
     assignment$fileNum <- num
+    
+    resetComment()
     
 
   }
@@ -347,20 +367,61 @@ function(input, output, session) {
     }
     
     a <- getAssignment()
-    getQuestion(a, input$question)
+    g <- getQuestion(a, input$question)
+    
+    if (grepl('<div class = \"answer-correct\".*?</div></br>', g) ||
+        grepl('<div class = \"answer-wrong\".*?</div></br>', g)) {
+      shinyjs::disable('grade')
+      shinyjs::enable('delete')
+    } else {
+      shinyjs::enable('grade')
+      shinyjs::disable('delete')
+    }
+    
+    g
     
   })
 
+  studentHeader <- function(include_question = TRUE) {
+    p <- paste0('<h3 style = "color: #317eac;"> Student #', assignment$fileNum)
+    if (include_question) {
+      p <- paste0(p, ', Question ', 
+                  input$question#, ', ', 
+                  #num_graded_string(currentFile())
+      )
+    }
+                
+    qs <- getQuestionsThatNeedGrading()
+    
+    if (length(qs) > 0) {
+      p <- paste0(p, '<span style = "font-size:80%;"> (You still need to grade questions: ', formatVector(qs, 5), ')</span>')
+    } else {
+      p <- paste0(p, '<span style = "font-size:80%;"> (Grading for this student complete)</span>')
+    }
+    paste(p, '</h3>')
+  }
+  
+  
   output$user_question <- renderUI({
-    HTML(paste0('<h3> Student #', assignment$fileNum, ', Question ', 
-                input$question, ', ', 
-                num_graded_string(currentFile()), '</h3>'), question())
+    HTML(studentHeader(), question())
   }) 
   
   output$user_assignment <- renderUI({
-    HTML(paste0('<h3> Student #', assignment$fileNum, 
-                ', ', 
-                num_graded_string(currentFile()), '</h3>'), getAssignment())
+    
+    cmt <- getCurrentTotalGradeComment()
+    
+    if (is.null(cmt)) {
+      shinyjs::enable('add-comment')
+      shinyjs::disable('delete-comment')
+    } else {
+      shinyjs::disable('add-comment')
+      shinyjs::enable('delete-comment')
+    }
+    
+    HTML(studentHeader(include_question = FALSE), getAssignment())
+    # HTML(paste0('<iframe height = "500px" width = "500px" src = "file://', 
+    #      currentFile(), '"></iframe>'))
+    # 
     
     
   })
@@ -400,19 +461,28 @@ function(input, output, session) {
       return()
     }
     
-    g <- grade(getAssignment(), input$question, input$points_earned, input$points_possible, input$comment)
+    g <- grade(getAssignment(), input$question, input$points_earned, 
+               input$points_possible, emojiize(input$comment))
     
     write(g, file = currentFile())
     
-   # nextQuestion(1)
     assignment$changed <- TRUE
-    #setGradebook(currentFile(), input$question, input$points_earned)  
+    
+    notify <- TRUE
+    
+    if (length(getStudentsThatNeedMoreGrading()) == 0) {
+      showNotification(HTML('<h3>All assignments have been graded</h3><p>You should now add final comments<p>'), 
+                       id = 'grading-complete', duration = 7, type = 'message')
+      notify <- FALSE
+    }
     
     if (input$advance == 'Next question') {
-      nextQuestion(1)
+      nextQuestion(1, notify)
     } else if (input$advance == "Next person") {
-      nextPerson(1)
+      nextPerson(1, notify)
     }
+    
+    
   })
   
   observeEvent(input$`add-comment`,{
@@ -421,7 +491,7 @@ function(input, output, session) {
       return()
     }
     
-    g <- addComment(getAssignment(), input$`final-comment`)
+    g <- addComment(getAssignment(), emojiize(input$`final-comment`))
     
     write(g, file = currentFile())
     
@@ -443,8 +513,8 @@ function(input, output, session) {
     
     g1 <- question()
     
-    g2 <- gsub('<p class = \"answer-correct\".*?</p>', '', g1)
-    g2 <- gsub('<p class = \"answer-wrong\".*?</p>', '', g2)
+    g2 <- gsub('<div class = \"answer-correct\".*?</div></br>', '', g1)
+    g2 <- gsub('<div class = \"answer-wrong\".*?</div></br>', '', g2)
     x <- gsub(g1, g2, getAssignment(), fixed = TRUE)
   
     assignment$changed <- TRUE
@@ -479,7 +549,14 @@ function(input, output, session) {
   
   source('gradebook.R', local = TRUE)
   
+  emojiize <- function(x) {
+    x <- gsub(':smile:', '&#128512;', x)
+    x <- gsub(':frown:', '&#128533;', x)
+    x
+  }
+  
   grade <- function(s, num, earned, possible, comment = '') {
+    
     
     print('grading..')
     q = paste0('### Question ', num)
@@ -498,7 +575,7 @@ function(input, output, session) {
     print('replacing...')
     #repl = paste0(q, '\n')
     repl <- ''
-    repl = paste0(repl, '<p class = "', class, '" id = "', id, '" style = "color:',color, '; background-color:white; padding:5px; border: solid 1px;">', 'Question ', num)
+    repl = paste0(repl, '<div class = "', class, '" id = "', id, '" style = "color:',color, '; background-color:white; padding:5px; border: solid 1px;">', 'Question ', num)
     repl = paste0(repl, ' -- [', earned, ' / ', possible, ' points] ', emoji)
     
     print('check comment..')
@@ -507,8 +584,10 @@ function(input, output, session) {
       repl = paste0(repl, '\n\n' , comment)
     }
     
-    repl = paste(repl, '</p>')
+    repl = paste(repl, '</br></div></br>')
     repl = paste0(repl, q)
+    
+    cat('replacing with:\n', repl, '...\n')
     
     s <- gsub(q, repl, s)
     
@@ -542,14 +621,57 @@ function(input, output, session) {
   # replaces total-grade element of txt with total grade
   addTotal <- function(f, txt) {
     
-    current <- str_extract(txt, '<h2 id = "total-grade">[\\s\\S]*?</h2>')
-    repl <- paste0('<h2 id = "total-grade">', 
-                   assignment$gradebook[basename(f),'total'], '</h2>')
+    num <- assignment$gradebook[basename(f),'total']
+    den <- sum(assignment$question_points)
     
-    gsub(current, repl, txt)      
+    current <- str_extract(txt, '<h2 id = "total-grade">[\\s\\S]*?</h2>')
+    repl <- paste0('<h2 id = "total-grade"> Total grade: ', 
+                   num, '/',den,' (', round(num/den*100),  '%)</h2>')
+    
+    gsub(current, repl, txt, fixed = TRUE)      
 
   }
   
+  formatVector <- function(x, n) {
+    if (length(x) > n) {
+      x <- x[1:n]
+      x <- c(x, '...')
+    }
+    paste(x, collapse = ',')
+  }
+  
+  # returns student numbers for assignments that need grading
+  getStudentsThatNeedMoreGrading <- function() {
+    (1:nrow(assignment$gradebook))[apply(is.na(assignment$gradebook), 1, any)]
+  }
+  
+  # get questions for current student
+  getQuestionsThatNeedGrading <- function() {
+    (1:ncol(assignment$gradebook))[is.na(assignment$gradebook[assignment$fileNum,])]
+  }
+  
+  output$needsGrading <- renderUI({
+    x <- getStudentsThatNeedMoreGrading()
+    if (length(x) == 0) {
+      return(h3('All assignments have been graded', style = 'color:darkred;'))
+    }
+    x <- formatVector(paste0('Student #', x), 5)
+    h3(paste('Needs grading: ', x), style = 'color:darkred;')
+  })
+ 
+  getCurrentTotalGradeComment <- function() {
+    tt <- totalGradeComment(mycomment = '([\\s\\S]*?)')
+    g <- getAssignment()
+    
+    s <- str_match(g, tt)
+    
+    if (is.na(s[1]) || ncol(s) < 2 || trimws(s[1,2]) == '') {
+      return(NULL)
+    }
+    return(s[1,2])
+  }
+  
+   
 }
 
 

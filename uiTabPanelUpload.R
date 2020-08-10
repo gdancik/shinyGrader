@@ -9,8 +9,8 @@
       fluidRow(column(4,
                       shinyDirButton('dir1', 'Select a directory', 'Directory selection',
                                      style = 'display:inline-block')
-      ), column(6,
-                checkboxInput('chkOverwrite', 'Automatic overwrite', value = TRUE)
+      ), column(6, style = 'margin-left:20px;', 
+                checkboxInput('chkOverwrite', 'Overwrite graded files', value = TRUE)
       )),
 
       numericInput('num_questions', 'Number of questions', value = 2)
