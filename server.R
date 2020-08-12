@@ -1,5 +1,6 @@
+if (!require(stringr)) install.packages('stringr')
+
 library(stringr)
-library(DT)
 
 ###################################################
 # The main reactive framework is 
@@ -59,7 +60,7 @@ endTotalGradeComment <- '\n<!-- END TOTAL GRADE COMMENT --->\n'
 function(input, output, session) {
 
   observeEvent(input$tab, {
-    print('clicked tab')
+    #print('clicked tab')
     
     if (input$tab == 'Grade questions') {
       

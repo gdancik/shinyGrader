@@ -1,9 +1,13 @@
 
 # Rely on the 'WorldPhones' dataset in the datasets
 # package (which generally comes preloaded).
+
+if (!require(shinyjs)) install.packages('shinyjs')
+if (!require(shinyFiles)) install.packages('shinyFiles')
+
 library(shinyjs)
 library(shinyFiles)
-library(shinythemes)
+
 
 source("uiTabPanelUpload.R", local = TRUE)
 source("uiTabPanelGradeQuestions.R", local = TRUE)
