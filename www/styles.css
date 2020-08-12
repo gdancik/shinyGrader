@@ -1,0 +1,49 @@
+                  #sidebar, .navbar {
+                  background-image: linear-gradient(#04519b,#044687 60%,#033769);
+                  color:#FFF;
+                  }
+                  
+                  .navbar-header > .navbar-brand {
+                  font-family:Courgette;
+                  color:#FFF;
+                  }
+                  
+                  .navbar-nav > li > a[data-value='hide'] {color: maroon !important;}
+                  
+                  /* Top level tabs */
+                  .navbar-default .navbar-nav > .active > a, .navbar-default .navbar-nav > .active > a:focus, .navbar-default .navbar-nav > .active > a:hover {
+                  color: white;
+                  background-color: maroon
+                  }
+                  
+                  
+                  
+                  .navbar-default .navbar-nav > li > a:hover {
+                  color: darkred;
+                  }
+                  
+                  
+                  .navbar-default .navbar-nav > li > a {
+                  color: white;
+                  }
+                  
+                  
+                  /* 2nd level (Disease menu) tabs */
+                  .navbar-default .navbar-nav > li > ul > li[class='active'] > a {
+                  color: white;
+                  background-color: maroon
+                  }
+                  
+                  .navbar-default .navbar-nav > li > ul > li > a {
+                  color: darkblue;
+                  }
+                  
+                  .navbar-default .navbar-nav > .active > li > ul > li > a, .navbar-default .navbar-nav > .active > li > ul > li > a:focus, .navbar-default .navbar-nav > .active > li > ul > li > a:hover {
+                  color: white;
+                  background-color: maroon
+                  }
+                  
+                  .navbar-default .navbar-nav > li >ul > li > a:hover {
+                  color: darkred;
+                  }
+                  
