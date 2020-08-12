@@ -12,6 +12,8 @@ source("uiTabPanelFinal.R", local = TRUE)
 # Use a fluid Bootstrap layout
 fluidPage(
 
+  includeCSS('www/styles.css'),
+  
   inlineCSS(list(
     #"body" = "background-color: yellow",
     "#shiny-notification-panel" = "width: 33% !important; bottom: 10% !important;",
@@ -26,7 +28,7 @@ fluidPage(
  # titlePanel("Help Me Grade"),
 useShinyjs(),
  #shinythemes::themeSelector(),
-  navbarPage('Help me grade', inverse = TRUE, theme = shinytheme("cerulean"),
+  navbarPage('Help me grade', inverse = TRUE,# theme = shinytheme("cerulean"),
     id = 'tab',
     
     tabPanelUpload, 

@@ -41,7 +41,7 @@ tabPanelGradeQuestions <- tabPanel('Grade questions',
                fluidRow(
                  selectInput('advance', 'After clicking Grade, where should we go?', 
                              choices = c('Next question', 'Next person', 'None'),
-                             selected = 'Next person')
+                             selected = 'None')
                )
             ),
              
