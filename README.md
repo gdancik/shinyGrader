@@ -16,7 +16,8 @@
 1. To launch *shinyGrader* from R Studio, type the following in the R console:
 
 `library(shiny)`
- `runGitHub('shinyGrader', 'gdancik')`
+
+`runGitHub('shinyGrader', 'gdancik')`
 
 This will download and open *shinyGrader* in your web browser. The first time you run *shinyGrader*, additional packages will be installed, which may take a minute.
 
@@ -26,10 +27,12 @@ This will download and open *shinyGrader* in your web browser. The first time yo
 
 2. In this folder, create a file named *questions.csv* which contains the point value for each question. This file should contain two columns, separated by a comma, and no header. For example, 
 
-`1,3
+<pre>
+1,3
 2,5
-`
-would indicate that the file contains 2 questions, which should have the format 'Question 1' and 'Question 2' in the assignment.
+</pre>
+
+would indicate that the file contains 2 questions, worth 3 and 5 points, respectively. Normally each question in the assignment should start with 'Question 1',  'Question 2', etc. For R/HTML Notebooks, the questions should begin with '### Question 1', '### Question 2', etc.
 
 3.  A new folder, named *graded*, is created in this directory that will contain the graded assignments. From the *Grade questions* tab, click on *Grade* to add the graded score and an optional comment above the current question.
 
