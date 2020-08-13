@@ -13,15 +13,18 @@
                 checkboxInput('chkOverwrite', 'Overwrite graded files', value = TRUE)
       )),
 
-      numericInput('num_questions', 'Number of questions', value = 2)
-
+      div(id = 'num_questions_div',
+        numericInput('num_questions', 'Number of questions', value = NULL)
+      )
     ),
 
     # Create a spot for the barplot
     mainPanel(
         #htmlOutput("user_question"),
         #dataTableOutput('gradebook')
-        h2('Question point values'),
+    
+        htmlOutput('pointValueHeader'),
+
         fluidRow(column(width = 3), column(width = 6,
             tableOutput('questionPoints')
         ))

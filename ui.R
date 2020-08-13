@@ -41,7 +41,8 @@ useShinyjs(),
 
 
   tabPanel('Gradebook', 
-           h3('This is a test'),
+           h3('Gradebook'),
+           p('Exporting option coming soon'), br(), br(),
            tableOutput('gradebook'))
   )
 )

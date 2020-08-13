@@ -59,6 +59,21 @@ endTotalGradeComment <- '\n<!-- END TOTAL GRADE COMMENT --->\n'
 # Define a server for the Shiny app
 function(input, output, session) {
 
+  shinyjs::hide('tab')
+  shinyjs::disable('num_questions_div')
+  
+  output$pointValueHeader <- renderUI({
+    
+    list(
+      h2('Upload your assignments'),
+      p('Select a directory containing the assignments to upload.',
+        'All HTML files in the directory will be uploaded.',
+        'Note that your directory must contain a questions.csv file',
+        'containing the point values for each question')
+    )
+  })
+  
+  
   observeEvent(input$tab, {
     #print('clicked tab')
     
@@ -73,17 +88,16 @@ function(input, output, session) {
   })
   
   
-  volumes <- c(Home = fs::path_home()#, 
-               #Desktop = "/Users/dandfdcikg/Desktop/r_grading"
-               , getVolumes()())
+  volumes <- c(Home = fs::path_home(), 
+               Desktop = "/Users/dancikg/Desktop/r_grading", getVolumes()())
   
   shinyDirChoose(
     input,
     'dir1',
     updateFreq = 0,
     session = session,
-    defaultRoot = 'Home',
-  #  defaultPath = "Desktop",
+    defaultRoot = 'Desktop',
+   # defaultPath = "Desktop",
     roots = volumes
   )
                  
@@ -97,15 +111,19 @@ function(input, output, session) {
     if (file.exists(question_file)) {
       r <- read.csv(paste0(dir_selected, '/questions.csv'), header = FALSE)
       
-      print(r)
+      #print(r)
       assignment$question_points <- r$V2
       if (!all(r$V1 == 1:nrow(r))) {
-        stop("Questions must be numbers 1 - n")
+        showNotification(HTML('<h3>Error: Invalid questions.csv format</h3><p>Questions must be numbered from 1 - n</p>'),
+                         duration = NULL, type = 'warning')
+        return()
       }
       assignment$num_questions <- nrow(r)
       
     } else {
-      stop("Error: missing questions.csv")
+      showNotification(HTML('<h3>Error: Missing questions.csv</h3><p>You must have a questions.csv file in the assignments folder</p>'),
+                       duration = NULL, type = 'warning')
+      return()
     }
     
     
@@ -113,12 +131,12 @@ function(input, output, session) {
     R_ASSIGNMENT <<- NULL
     questionStr <<- 'Question '
     
-    cat('update to: ', assignment$num_questions)
+    #cat('update to: ', assignment$num_questions)
     updateTextInput(session, 'num_questions', 'Number of questions', assignment$num_questions)
     
     updateQuestionInput(1)
     
-    cat('selected directory: ', dir_selected, '\n')
+    #cat('selected directory: ', dir_selected, '\n')
     files <- Sys.glob(paste0(dir_selected, '/*.html'))
     
     s <- unlist(sapply(files, validateFormat))
@@ -139,7 +157,7 @@ function(input, output, session) {
     dir.create(d, showWarnings = FALSE)
     
     
-    cat("check is: ", input$chkOverwrite, '\n')
+    #cat("check is: ", input$chkOverwrite, '\n')
     #scan(what = character())
     
     if (input$chkOverwrite) {
@@ -199,6 +217,16 @@ function(input, output, session) {
       readAssignment(files[i], copies[i])
     }
     
+    output$pointValueHeader <- renderUI({
+      
+      list(
+        h2('Question point values'),
+        p('The question and point values uploaded from questions.csv ',
+          'are given below'), br()
+        )
+    })
+    
+    
   })
 
   # get graded file name or directory
@@ -210,6 +238,8 @@ function(input, output, session) {
     if (dir) {
       return(r)
     } 
+    
+    shinyjs::show('tab')
     
     g <- paste0(r,b)
     gsub('\\.html$', '_graded.html', g)
@@ -296,7 +326,7 @@ function(input, output, session) {
   # as well as a total grade div after the first div
   readAssignment <- function(f, copy_file = NULL) {
     
-    cat('reading: ', f, '...\n')
+    #cat('reading: ', f, '...\n')
     s <- readLines(f)
     
     if (is.null(R_ASSIGNMENT)) {
@@ -365,7 +395,7 @@ function(input, output, session) {
     
     updateQuestionInput(selected)
     
-    cat('update with points: ', assignment$question_points[selected], '...\n')
+    #cat('update with points: ', assignment$question_points[selected], '...\n')
     updatePointsPossible(assignment$question_points[selected])
     
     resetComment()
@@ -409,7 +439,7 @@ function(input, output, session) {
   
   # get the current question
   question <- reactive({
-    cat('getting question...')
+    #cat('getting question...')
     if (is.null(assignment$files)) {
       return ("")
     }
@@ -484,7 +514,7 @@ function(input, output, session) {
         return()
       }
     
-      print('re-render gradebook...')
+      #print('re-render gradebook...')
     
       output$gradebook <- renderTable(
         assignment$gradebook,rownames = TRUE
@@ -597,7 +627,7 @@ function(input, output, session) {
   
   
   observeEvent( c(input$nextp, input$nextpFinal),{
-                   cat("next person")
+                   #cat("next person")
     nextPerson(1)
   }, ignoreInit = TRUE)
   
@@ -616,7 +646,7 @@ function(input, output, session) {
   grade <- function(s, num, earned, possible, comment = '') {
     
     
-    print('grading..')
+    #print('grading..')
     q = paste0(questionStr, num)
     
     id <- paste0('q', num, '-graded')
@@ -630,13 +660,13 @@ function(input, output, session) {
       class <- 'answer-wrong'
     }
     
-    print('replacing...')
+    #print('replacing...')
     #repl = paste0(q, '\n')
     repl <- ''
     repl = paste0(repl, '<div id = "', id, '" class = "', class, '" style = "color:',color, '; background-color:white; padding:5px; border: solid 1px;">', 'Question ', num)
     repl = paste0(repl, ' -- [', earned, ' / ', possible, ' points] ', emoji)
     
-    print('check comment..')
+    #print('check comment..')
     
     if (comment != '') {
       if (R_ASSIGNMENT) {
@@ -649,7 +679,7 @@ function(input, output, session) {
     repl = paste(repl, '</br></div></br>')
     repl = paste0(repl, q)
     
-    cat('replacing with:\n', repl, '...\n')
+    #cat('replacing with:\n', repl, '...\n')
     
     s <- gsub(q, repl, s)
     
@@ -666,7 +696,7 @@ function(input, output, session) {
   
   addComment <- function(s, comment) {
     
-    print('commenting ..')
+    #print('commenting ..')
    
     x <- str_extract(s, totalGradeComment())
     t <- totalGradeComment(mycomment = comment)
