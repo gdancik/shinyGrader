@@ -16,13 +16,17 @@ exclamation <- '&#10071'
 correct <- '&#9989'
 #questionStr <- '### Question '
 questionStr <- 'Question '
+#questionStr <- '# '
+
+R_QUESTION_STR <- '# '
+#R_QUESTION_STR <- '### Question '
 
 
 getQuestion <- function(s, num) {
   
   if (R_ASSIGNMENT) {
     s2 <- strsplit(s,'<pre class="r">')[[1]]
-    num <- paste0(questionStr, num)
+    num <- paste0(R_QUESTION_STR, num)
     g <- grep(num, s2)
     return(paste0('<pre class="r">', s2[g]))
   } else {
@@ -131,7 +135,7 @@ function(input, output, session) {
     R_ASSIGNMENT <<- NULL
     questionStr <<- 'Question '
     
-    #cat('update to: ', assignment$num_questions)
+    cat('update to: ', assignment$num_questions)
     updateTextInput(session, 'num_questions', 'Number of questions', assignment$num_questions)
     
     updateQuestionInput(1)
@@ -142,6 +146,8 @@ function(input, output, session) {
     s <- unlist(sapply(files, validateFormat))
     
     msg <- paste0(s, collapse = "</br>")
+    
+    cat('msg: ', msg, '\n')
    
     if (!is.null(msg) && msg != "") {
       
@@ -149,6 +155,8 @@ function(input, output, session) {
         HTML("<h3 style = 'color:red'>Assignment format not valid</h3>", 
              "<p>", msg, "</p")
       })
+      
+      shinyjs::show('tab')
       return()
     }
     
@@ -260,8 +268,15 @@ function(input, output, session) {
     r <- readAssignment(f, NULL)
     questions <- as.numeric(str_match_all(r, paste0(questionStr, "(\\d+)"))[[1]][,2])
     
+    cat('questions: ', questions, '\n')
+    
     msg <- NULL
     n <- assignment$num_questions
+    
+    save(r, questions, n, questionStr, file = 'a.RData')
+    
+    cat('n: ', n, '\n')
+    
     missing <- setdiff(1:n, questions)
     extra <- setdiff(questions, 1:n)
     
@@ -332,7 +347,7 @@ function(input, output, session) {
     if (is.null(R_ASSIGNMENT)) {
       R_ASSIGNMENT <<- any(grepl('<pre class="r">', s) )
       if (R_ASSIGNMENT) {
-        questionStr <<- '### Question '
+        questionStr <<- R_QUESTION_STR
       }
     }
     
@@ -437,6 +452,14 @@ function(input, output, session) {
     readAssignment(currentFile())
   })
   
+  divCorrectRE <- function(num) {
+    paste0('<div id = "q', num, '+-graded" class = \"answer-correct\".*?</div></br>')
+  }
+  
+  divWrongRE <- function(num) {  
+    paste0('<div id = "q', num, '+-graded" class = \"answer-wrong\".*?</div></br>')
+  }
+  
   # get the current question
   question <- reactive({
     #cat('getting question...')
@@ -447,9 +470,11 @@ function(input, output, session) {
     a <- getAssignment()
     g <- getQuestion(a, input$question)
   
-    if (grepl('<div id = "q\\d+-graded" class = \"answer-correct\".*?</div></br>', g) ||
-        grepl('<div id = "q\\d+-graded" class = \"answer-wrong\".*?</div></br>', g)) {
-      shinyjs::disable('grade')
+    p1 <- divCorrectRE(input$question)
+    p2 <- divWrongRE(input$question)
+    
+    if (grepl(p1, g) || grepl(p2, g)) {
+        shinyjs::disable('grade')
       shinyjs::enable('delete')
     } else {
       shinyjs::enable('grade')
@@ -598,10 +623,11 @@ function(input, output, session) {
     g1 <- question()
     a <- getAssignment()
     
-    
-    
-    g2 <- gsub('<div id = "q\\d+-graded" class = \"answer-correct\".*?</div></br>', '', g1)
-    g2 <- gsub('<div id = "q\\d+-graded" class = \"answer-wrong\".*?</div></br>', '', g2)
+    p1 <- divCorrectRE(input$question)
+    p2 <- divWrongRE(input$question)
+ 
+    g2 <- gsub(p1, '', g1)
+    g2 <- gsub(p2, '', g2)
     
     x <- gsub(g1, g2, getAssignment(), fixed = TRUE)
   
