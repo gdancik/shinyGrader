@@ -28,7 +28,7 @@ getQuestion <- function(s, num) {
     s2 <- strsplit(s,'<pre class="r">')[[1]]
     num <- paste0(R_QUESTION_STR, num)
     g <- grep(num, s2)
-    return(paste0('<pre class="r">', s2[g]))
+    return(paste0('<pre class="r">', s2[g[1]]))
   } else {
     
     
@@ -273,7 +273,7 @@ function(input, output, session) {
     msg <- NULL
     n <- assignment$num_questions
     
-    save(r, questions, n, questionStr, file = 'a.RData')
+    #save(r, questions, n, questionStr, file = 'a.RData')
     
     cat('n: ', n, '\n')
     
@@ -671,7 +671,6 @@ function(input, output, session) {
   
   grade <- function(s, num, earned, possible, comment = '') {
     
-    
     #print('grading..')
     q = paste0(questionStr, num)
     
@@ -686,8 +685,7 @@ function(input, output, session) {
       class <- 'answer-wrong'
     }
     
-    #print('replacing...')
-    #repl = paste0(q, '\n')
+   
     repl <- ''
     repl = paste0(repl, '<div id = "', id, '" class = "', class, '" style = "color:',color, '; background-color:white; padding:5px; border: solid 1px;">', 'Question ', num)
     repl = paste0(repl, ' -- [', earned, ' / ', possible, ' points] ', emoji)
@@ -707,7 +705,7 @@ function(input, output, session) {
     
     #cat('replacing with:\n', repl, '...\n')
     
-    s <- gsub(q, repl, s)
+    s <- sub(q, repl, s)
     
     setGradebook(currentFile(), input$question, input$points_earned)  
     s <- addTotal(currentFile(), s)  
