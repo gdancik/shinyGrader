@@ -10,7 +10,7 @@
                       shinyDirButton('dir1', 'Select a directory', 'Directory selection',
                                      style = 'display:inline-block')
       ), column(6, style = 'margin-left:20px;', 
-                checkboxInput('chkOverwrite', 'Overwrite graded files', value = TRUE)
+                checkboxInput('chkOverwrite', 'Overwrite graded files', value = FALSE)
       )),
 
       div(id = 'num_questions_div',

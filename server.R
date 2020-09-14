@@ -24,11 +24,48 @@ R_QUESTION_STR <- '# '
 
 getQuestion <- function(s, num) {
   
+  num_in <- num
+  
   if (R_ASSIGNMENT) {
     s2 <- strsplit(s,'<pre class="r">')[[1]]
-    num <- paste0(R_QUESTION_STR, num)
+    num <- paste0(R_QUESTION_STR, num_in)
+    num2 <- paste0(R_QUESTION_STR, as.integer(num_in) +1)
     g <- grep(num, s2)
-    return(paste0('<pre class="r">', s2[g[1]]))
+    
+    # q1 <- paste0('<pre class="r">[\\s\\S]+?', num, 
+    #              '\\)[\\s\\S]+?', num2, '\\).*')
+    # 
+    # save(num, num2, q1, s, file = 'a.RData')
+    # 
+    
+    # q1 <- paste0('<pre class="r">[^(pre class="r")]+?', num, 
+    #              '\\)[\\s\\S]+?', num2, '\\).*')
+    
+    
+    # f <- str_extract(s, q1)
+    # if (!is.na(f)) {
+    #   return (f)
+    # }
+    # 
+    # print('NOT FOUND!')
+    # q2 <- paste0('<pre class="r">[\\s\\S]+?', num, 
+    #              '\\)[\\s\\S]+')
+    # 
+    # return(str_extract(s, q2))
+    
+    
+    #return(paste0('<pre class="r">', s2[g[1]]))
+    
+   
+    g2 <- grep(num2, s2)
+
+    if (length(g2) == 0) {
+      return(paste0('<pre class="r">', s2[g[1]]))
+    }
+
+    return(paste0('<pre class="r">', s2[g[1]:g2[1]], collapse = '\n'))
+
+    
   } else {
     
     
@@ -93,14 +130,16 @@ function(input, output, session) {
   
   
   volumes <- c(Home = fs::path_home(), 
-               Desktop = "/Users/dancikg/Desktop/r_grading", getVolumes()())
+               Desktop = "/Users/dancikg/Desktop/r_grading", 
+               CSC315 = "/Users/dancikg/easternct/COURSES/CSC315/2020-Fall/Submitted/",
+               getVolumes()())
   
   shinyDirChoose(
     input,
     'dir1',
     updateFreq = 0,
     session = session,
-    defaultRoot = 'Desktop',
+    defaultRoot = 'CSC315',
    # defaultPath = "Desktop",
     roots = volumes
   )
@@ -147,8 +186,6 @@ function(input, output, session) {
     
     msg <- paste0(s, collapse = "</br>")
     
-    cat('msg: ', msg, '\n')
-   
     if (!is.null(msg) && msg != "") {
       
       output$user_question <- renderUI({
@@ -266,11 +303,21 @@ function(input, output, session) {
   # questions must be numeric (1, 2, etc)    
   validateFormat <- function(f) {
     r <- readAssignment(f, NULL)
-    questions <- as.numeric(str_match_all(r, paste0(questionStr, "(\\d+)"))[[1]][,2])
+    questions <- as.numeric(str_match_all(r, paste0(questionStr, "(\\d+)\\)"))[[1]][,2])
     
+    graded <- str_extract(r, 'q\\d+-graded')
+    
+    totalGraded <- str_extract(r, 'total-graded')
+    
+  
     cat('questions: ', questions, '\n')
-    
+  
     msg <- NULL
+  
+    if (!is.na(graded) || !is.na(totalGraded)) {
+      msg <- 'Found graded questions (qnum-graded) or total-graded'
+    }
+      
     n <- assignment$num_questions
     
     #save(r, questions, n, questionStr, file = 'a.RData')
@@ -291,6 +338,7 @@ function(input, output, session) {
     if (!is.null(msg)) {
       msg <- paste0("<b>", basename(f), "</b>", msg, "</br></br>")  
     }
+    
     
     msg
     
@@ -363,7 +411,8 @@ function(input, output, session) {
       # get first div
       
       if (R_ASSIGNMENT) {
-        s <-  str_extract(assignment_orig, '<div\\b[^>]*>[\\s\\S]*?</div>')
+        #s <-  str_extract(assignment_orig, '<div\\b[^>]*>[\\s\\S]*?</div>')
+        s <- str_extract(assignment_orig, '<div class="fluid-row" id="header">')
       } else {
         s <- str_extract(assignment_orig, '<body.*?>')
       }
@@ -453,11 +502,11 @@ function(input, output, session) {
   })
   
   divCorrectRE <- function(num) {
-    paste0('<div id = "q', num, '+-graded" class = \"answer-correct\".*?</div></br>')
+    paste0('<div id = "q', num, '-graded" class = \"answer-correct\".*?</div></br>')
   }
   
   divWrongRE <- function(num) {  
-    paste0('<div id = "q', num, '+-graded" class = \"answer-wrong\".*?</div></br>')
+    paste0('<div id = "q', num, '-graded" class = \"answer-wrong\".*?</div></br>')
   }
   
   # get the current question
@@ -626,10 +675,17 @@ function(input, output, session) {
     p1 <- divCorrectRE(input$question)
     p2 <- divWrongRE(input$question)
  
-    g2 <- gsub(p1, '', g1)
-    g2 <- gsub(p2, '', g2)
+    cat('delete now...\n')
     
-    x <- gsub(g1, g2, getAssignment(), fixed = TRUE)
+    # print(p1)
+    # print(p2)
+    
+    #save(p1, p2, g1, file = 'a.RData')
+    
+    g2 <- gsub(p1, '', a)
+    x <- gsub(p2, '', g2)
+    
+    #x <- gsub(g1, g2, getAssignment(), fixed = TRUE)
   
     assignment$changed <- TRUE
     
@@ -694,7 +750,7 @@ function(input, output, session) {
     
     if (comment != '') {
       if (R_ASSIGNMENT) {
-          repl = paste0(repl, '\n\n' , comment)
+          repl = paste0(repl, '' , comment)
       } else {
           repl <- paste0(repl, '</br></br>', comment)
       }
@@ -703,7 +759,7 @@ function(input, output, session) {
     repl = paste(repl, '</br></div></br>')
     repl = paste0(repl, q)
     
-    #cat('replacing with:\n', repl, '...\n')
+    cat('replacing with:\n', repl, '...\n')
     
     s <- sub(q, repl, s)
     
