@@ -28,8 +28,8 @@ getQuestion <- function(s, num) {
   
   if (R_ASSIGNMENT) {
     s2 <- strsplit(s,'<pre class="r">')[[1]]
-    num <- paste0(R_QUESTION_STR, num_in)
-    num2 <- paste0(R_QUESTION_STR, as.integer(num_in) +1)
+    num <- paste0(R_QUESTION_STR, num_in, ')')
+    num2 <- paste0(R_QUESTION_STR, as.integer(num_in) +1, ')')
     g <- grep(num, s2)
     
     # q1 <- paste0('<pre class="r">[\\s\\S]+?', num, 
@@ -156,6 +156,9 @@ function(input, output, session) {
       
       #print(r)
       assignment$question_points <- r$V2
+      
+      shinyjs::alert(paste0('Total points: ', sum(r$V2)))
+      
       if (!all(r$V1 == 1:nrow(r))) {
         showNotification(HTML('<h3>Error: Invalid questions.csv format</h3><p>Questions must be numbered from 1 - n</p>'),
                          duration = NULL, type = 'warning')
@@ -488,8 +491,12 @@ function(input, output, session) {
     }
     
     assignment$fileNum <- num
+  
     
+    nextQuestion(0)  
     resetComment()
+  
+  
     
 
   }
@@ -728,7 +735,7 @@ function(input, output, session) {
   grade <- function(s, num, earned, possible, comment = '') {
     
     #print('grading..')
-    q = paste0(questionStr, num)
+    q = paste0(questionStr, num, ')')
     
     id <- paste0('q', num, '-graded')
     
@@ -737,20 +744,23 @@ function(input, output, session) {
     class <- 'answer-correct'
     if (earned != possible) {
       emoji = cross
+      if (earned == possible - 1) {
+        emoji <- exclamation
+      } 
       color <- 'red'
       class <- 'answer-wrong'
     }
     
    
     repl <- ''
-    repl = paste0(repl, '<div id = "', id, '" class = "', class, '" style = "color:',color, '; background-color:white; padding:5px; border: solid 1px;">', 'Question ', num)
+    repl = paste0(repl, '<div id = "', id, '" class = "', class, '" style = "color:',color, '; background-color:white; padding:5px; border: solid 1px; word-break: keep-all;">', 'Question ', num)
     repl = paste0(repl, ' -- [', earned, ' / ', possible, ' points] ', emoji)
     
     #print('check comment..')
     
     if (comment != '') {
       if (R_ASSIGNMENT) {
-          repl = paste0(repl, '' , comment)
+          repl = paste0(repl, '</br></br>' , comment)
       } else {
           repl <- paste0(repl, '</br></br>', comment)
       }
