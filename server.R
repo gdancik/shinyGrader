@@ -59,6 +59,8 @@ getQuestion <- function(s, num) {
    
     g2 <- grep(num2, s2)
 
+    cat("g2 = ", g2, "\n")
+    
     if (length(g2) == 0) {
       return(paste0('<pre class="r">', s2[g[1]]))
     }
@@ -518,7 +520,7 @@ function(input, output, session) {
   
   # get the current question
   question <- reactive({
-    #cat('getting question...')
+    cat('getting question...\n')
     if (is.null(assignment$files)) {
       return ("")
     }
@@ -742,7 +744,7 @@ function(input, output, session) {
     emoji = correct 
     color <- 'green'
     class <- 'answer-correct'
-    if (earned != possible) {
+    if (earned < possible) {
       emoji = cross
       if (earned == possible - 1) {
         emoji <- exclamation
