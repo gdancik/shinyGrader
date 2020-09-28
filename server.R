@@ -24,6 +24,7 @@ R_QUESTION_STR <- '# '
 
 getQuestion <- function(s, num) {
   
+  #cat("getQuestion...\n")
   num_in <- num
   
   if (R_ASSIGNMENT) {
@@ -59,7 +60,7 @@ getQuestion <- function(s, num) {
    
     g2 <- grep(num2, s2)
 
-    cat("g2 = ", g2, "\n")
+    #cat("g2 = ", g2, "\n\n\n")
     
     if (length(g2) == 0) {
       return(paste0('<pre class="r">', s2[g[1]]))
@@ -378,9 +379,6 @@ function(input, output, session) {
     assignment$fileNum <- as.integer(input$personFinal)
   })
   
-  
-  
- 
   updatePointsPossible <- function(points, update_earned = TRUE) {
     updateNumericInput(session, 'points_possible', 'Points possible', value = points)
     if (update_earned) {
@@ -447,11 +445,22 @@ function(input, output, session) {
   #  1 for next question
   #  -1 for previous
   # NULL to go to first question
-  nextQuestion <- function(offset, notify = TRUE) {
+  
+  # go to 'current' question if 'current' is not NULL
+  
+  nextQuestion <- function(offset, notify = TRUE,current = NULL) {
 
-    selected = 1
-    if (!is.null(offset)) {
-      selected = as.integer(input$question) + offset
+    cat('next question ...\n')
+    
+    selected = current
+    
+    if (is.null(selected)) {
+    
+      selected = 1
+      if (!is.null(offset)) {
+        selected = as.integer(input$question) + offset
+      }
+    
     }
     
     if (selected > input$num_questions) {
@@ -462,11 +471,10 @@ function(input, output, session) {
       selected = 1
     }
     
-    updateQuestionInput(selected)
+    isolate(updateQuestionInput(selected))
     
     #cat('update with points: ', assignment$question_points[selected], '...\n')
     updatePointsPossible(assignment$question_points[selected])
-    
     resetComment()
     
     }
@@ -520,10 +528,13 @@ function(input, output, session) {
   
   # get the current question
   question <- reactive({
-    cat('getting question...\n')
+    
+    #cat('question() ...\n')
+    
     if (is.null(assignment$files)) {
       return ("")
     }
+    
     
     a <- getAssignment()
     g <- getQuestion(a, input$question)
@@ -667,6 +678,14 @@ function(input, output, session) {
   })
   
   
+  observeEvent(input$question, {
+  
+    qnum <- as.integer(input$question)
+
+    updatePointsPossible(assignment$question_points[qnum])
+    resetComment()
+  })
+  
   
   observeEvent(input$nextq, {
     nextQuestion(1)
@@ -753,6 +772,10 @@ function(input, output, session) {
       class <- 'answer-wrong'
     }
     
+    if (possible == 0 && earned == 0) {
+      emoji = ''
+      color <- 'blue'
+    }
    
     repl <- ''
     repl = paste0(repl, '<div id = "', id, '" class = "', class, '" style = "color:',color, '; background-color:white; padding:5px; border: solid 1px; word-break: keep-all;">', 'Question ', num)
