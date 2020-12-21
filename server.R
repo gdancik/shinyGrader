@@ -60,10 +60,10 @@ getQuestion <- function(s, num) {
    
     g2 <- grep(num2, s2)
 
-    #cat("g2 = ", g2, "\n\n\n")
+    cat("g2 = ", g2, "\n\n\n")
     
     if (length(g2) == 0) {
-      return(paste0('<pre class="r">', s2[g[1]]))
+      return(paste0('<pre class="r">', s2[g[1]:length(s2)], collapse = '\n'))
     }
 
     return(paste0('<pre class="r">', s2[g[1]:g2[1]], collapse = '\n'))
@@ -332,6 +332,9 @@ function(input, output, session) {
     
     missing <- setdiff(1:n, questions)
     extra <- setdiff(questions, 1:n)
+    
+    # TO TO: remove
+    missing <- setdiff(missing, 3)
     
     if (length(missing) > 0) {
       msg <- paste0(msg, "</br>missing questions: ", paste(missing, collapse = ","))
@@ -747,10 +750,19 @@ function(input, output, session) {
   
   source('gradebook.R', local = TRUE)
   
+  
+  italicize <- function(x) {
+    paste0('<i>', 
+           strsplit(x, '*', fixed = TRUE)[[1]][2],
+              '</i>')
+  }
+  
   emojiize <- function(x) {
     x <- gsub(':smile:', '&#128512;', x)
     x <- gsub(':frown:', '&#128533;', x)
-    x
+    
+    str_replace_all(x, "\\*\\b[^\\W]+\\b\\*", italicize)  
+    
   }
   
   grade <- function(s, num, earned, possible, comment = '') {
@@ -765,7 +777,7 @@ function(input, output, session) {
     class <- 'answer-correct'
     if (earned < possible) {
       emoji = cross
-      if (earned == possible - 1) {
+      if (earned / possible > 0.80) {
         emoji <- exclamation
       } 
       color <- 'red'
