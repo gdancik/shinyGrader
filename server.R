@@ -419,6 +419,7 @@ function(input, output, session) {
       if (R_ASSIGNMENT) {
         #s <-  str_extract(assignment_orig, '<div\\b[^>]*>[\\s\\S]*?</div>')
         s <- str_extract(assignment_orig, '<div class="fluid-row" id="header">')
+        s <- str_extract(assignment_orig, '<body.*?>')
       } else {
         s <- str_extract(assignment_orig, '<body.*?>')
       }
