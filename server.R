@@ -134,7 +134,7 @@ function(input, output, session) {
   
   volumes <- c(Home = fs::path_home(), 
                Desktop = "/Users/dancikg/Desktop/r_grading", 
-               CSC315 = "/Users/dancikg/easternct/COURSES/CSC315/2020-Fall/Submitted/",
+               CSC315 = "/Users/dancikg/easternct/COURSES/CSC315/2020-Fall/SummerAssignments/",
                getVolumes()())
   
   shinyDirChoose(
@@ -424,8 +424,8 @@ function(input, output, session) {
         s <- str_extract(assignment_orig, '<body.*?>')
       }
       
-      assignment_orig <- gsub(s, paste0(s, '\n', 
-                                        '<div id = "total-grade-div" style = "color:blue; border: 1px solid blue; padding:10px; margin-bottom:10px;">',
+      assignment_orig <- gsub(s, paste0(s, '\n</br>', 
+                                        '<div id = "total-grade-div" class = "container-fluid main-container" style = "color:blue; border: 1px solid blue; padding:10px; margin-bottom:10px;">',
                                         '<h2 id = "total-grade">Grade Here</h2><h3>',
                                         beginTotalGradeComment, endTotalGradeComment,
                                         '</h3></div>'),
