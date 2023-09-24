@@ -1,6 +1,9 @@
 if (!require(stringr)) install.packages('stringr')
 
 library(stringr)
+library(DT)
+
+source('feedback.R')
 
 ###################################################
 # The main reactive framework is 
@@ -20,7 +23,6 @@ questionStr <- 'Question '
 
 R_QUESTION_STR <- '# '
 #R_QUESTION_STR <- '### Question '
-
 
 getQuestion <- function(s, num) {
   
@@ -133,8 +135,9 @@ function(input, output, session) {
   
   
   volumes <- c(Home = fs::path_home(), 
-               Desktop = "/Users/dancikg/Desktop/r_grading", 
-               CSC315 = "/Users/dancikg/easternct/COURSES/CSC315/2020-Fall/SummerAssignments/",
+               Desktop = "/Users/dancikg/Desktop/",
+	       Download = "/Users/dancikg/Downloads/",
+	       test = "/Users/dancikg/Downloads/shiny_test/",
                getVolumes()())
   
   shinyDirChoose(
@@ -175,6 +178,17 @@ function(input, output, session) {
       return()
     }
     
+    
+    feedback_file <<- paste0(dir_selected, '/feedback.rds')
+    if (file.exists(feedback_file)) {
+      print('feedback file exists...')
+      assignment$feedback <- readRDS(feedback_file)
+    } else {
+      print('no feedback file...creating empty one...')
+      assignment$feedback <- create_feedback(nrow(r))
+    }
+    
+    print(assignment$feedback)
     
     # reset global variables
     R_ASSIGNMENT <<- NULL
@@ -441,7 +455,8 @@ function(input, output, session) {
   assignment <- reactiveValues(files = NULL, fileNum = NULL, changed = TRUE, 
                                gradebook = NULL,
                                questions_points = NULL, 
-                               num_questions = NULL)
+                               num_questions = NULL,
+                               feedback = NULL)
   
   
 
@@ -658,12 +673,18 @@ function(input, output, session) {
       notify <- FALSE
     }
     
+    if (trimws(input$comment) != '') {
+      assignment$feedback <- add_feedback(assignment$feedback, input$question,
+                                input$points_earned, trimws(input$comment))
+      saveRDS(assignment$feedback, file = feedback_file)
+    
+    }
+    
     if (input$advance == 'Next question') {
       nextQuestion(1, notify)
     } else if (input$advance == "Next person") {
       nextPerson(1, notify)
     }
-    
     
   })
   
@@ -846,7 +867,7 @@ function(input, output, session) {
     
     current <- str_extract(txt, '<h2 id = "total-grade">[\\s\\S]*?</h2>')
     repl <- paste0('<h2 id = "total-grade"> Total grade: ', 
-                   num, '/',den,' (', round(num/den*100),  '%)</h2>')
+                   num, '/',den,' (', round( (num + 1e-6) /den*100),  '%)</h2>')
     
     gsub(current, repl, txt, fixed = TRUE)      
 
@@ -890,6 +911,40 @@ function(input, output, session) {
     }
     return(s[1,2])
   }
+  
+  format_feedback_reactive <- reactive({
+    df <- data.frame(question_feedback = format_feedback(assignment$feedback, input$question))
+    datatable(df, 
+              filter = "none", 
+              selection = "single",
+              options = list(dom = 't', scrollX = TRUE)
+    )
+  })
+  
+  
+  output$feedbackTable <- renderDataTable({
+    format_feedback_reactive()
+  })
+  
+  observeEvent(input$feedbackTable_rows_selected, {
+    
+    selected <- input$feedbackTable_rows_selected
+    cat('selected: ', selected)
+    
+    i <- get_feedback_index(assignment$feedback, input$question)
+    fb <- assignment$feedback[[i]][[selected]]
+    
+    fb_all <- assignment$feedback
+    
+    updateNumericInput(session, 'points_earned', 'Points earned',
+                       value = as.integer(fb[[1]]))
+    updateTextAreaInput(session, 'comment', 'Question comment', 
+                        fb[[2]])
+    
+    
+    
+  })
+  
   
    
 }

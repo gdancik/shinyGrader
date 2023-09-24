@@ -37,6 +37,11 @@ tabPanelGradeQuestions <- tabPanel('Grade questions',
                  actionButton('delete','Delete', class = 'btn btn-danger', width = "100%")
                   )
                ),
+               
+               fluidRow(
+                 dataTableOutput('feedbackTable')
+               ),
+               
                hr(),
                fluidRow(
                  selectInput('advance', 'After clicking Grade, where should we go?', 

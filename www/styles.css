@@ -46,4 +46,9 @@
                   .navbar-default .navbar-nav > li >ul > li > a:hover {
                   color: darkred;
                   }
-                  
+                 
+		  #user_question {
+			height:500px;
+			overflow: auto;
+		  }
+ 
